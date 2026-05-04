@@ -27,7 +27,6 @@ func TestUnpack(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.input, func(t *testing.T) {
 			result, err := Unpack(tc.input)
 			require.NoError(t, err)
@@ -43,7 +42,6 @@ func TestUnpackInvalidString(t *testing.T) {
 		"aaa10b",
 	}
 	for _, tc := range invalidStrings {
-		tc := tc
 		t.Run(tc, func(t *testing.T) {
 			_, err := Unpack(tc)
 			require.Truef(t, errors.Is(err, ErrInvalidString), "actual error %q", err)
@@ -59,7 +57,6 @@ func TestUnpackInvalidEscape(t *testing.T) {
 		`qw\ne`,
 	}
 	for _, tc := range invalidEscapes {
-		tc := tc
 		t.Run(tc, func(t *testing.T) {
 			_, err := Unpack(tc)
 			require.Truef(t, errors.Is(err, ErrInvalidEscape), "actual error %q", err)

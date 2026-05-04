@@ -7,8 +7,10 @@ import (
 	"unicode"
 )
 
-var ErrInvalidString = errors.New("invalid string")
-var ErrInvalidEscape = errors.New("invalid escape")
+var (
+	ErrInvalidString = errors.New("invalid string")
+	ErrInvalidEscape = errors.New("invalid escape")
+)
 
 func Unpack(rawStr string) (result string, err error) {
 	stringRunes := []rune(rawStr)
@@ -33,25 +35,27 @@ func Unpack(rawStr string) (result string, err error) {
 			err = ErrInvalidString
 			return
 		case escapeCase:
-			if current == 'n' && nextIsDigit {
+			switch {
+			case current == 'n' && nextIsDigit:
 				digit, _ := strconv.Atoi(string(next))
 				strBuilder.WriteString(strings.Repeat(string('\\')+string(current), digit))
 				escapeCase = false
 				i++
-			} else if currentIsDigit {
-				if nextIsDigit {
+			case currentIsDigit:
+				switch {
+				case nextIsDigit:
 					digit, _ := strconv.Atoi(string(next))
 					strBuilder.WriteString(strings.Repeat(string(current), digit))
 					escapeCase = false
 					i++
-				} else if nextIsEscaping {
+				case nextIsEscaping:
 					strBuilder.WriteString(string(current))
 					escapeCase = false
-				} else {
+				default:
 					strBuilder.WriteString(string(current))
 					escapeCase = false
 				}
-			} else if nextIsDigit {
+			case nextIsDigit:
 				if currentIsEscaping {
 					digit, _ := strconv.Atoi(string(next))
 					strBuilder.WriteString(strings.Repeat(string(current), digit))
@@ -60,10 +64,10 @@ func Unpack(rawStr string) (result string, err error) {
 					return
 				}
 				i++
-			} else if nextIsEscaping {
+			case nextIsEscaping:
 				strBuilder.WriteString(string('\\'))
 				escapeCase = false
-			} else {
+			default:
 				err = ErrInvalidEscape
 				return
 			}
