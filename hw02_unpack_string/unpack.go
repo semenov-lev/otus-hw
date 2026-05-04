@@ -56,13 +56,8 @@ func Unpack(rawStr string) (result string, err error) {
 					escapeCase = false
 				}
 			case nextIsDigit:
-				if currentIsEscaping {
-					digit, _ := strconv.Atoi(string(next))
-					strBuilder.WriteString(strings.Repeat(string(current), digit))
-				} else {
-					err = ErrInvalidString
-					return
-				}
+				digit, _ := strconv.Atoi(string(next))
+				strBuilder.WriteString(strings.Repeat(string(current), digit))
 				i++
 			case nextIsEscaping:
 				strBuilder.WriteString(string('\\'))
