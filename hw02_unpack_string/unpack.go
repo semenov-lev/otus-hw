@@ -12,7 +12,8 @@ var ErrInvalidEscape = errors.New("invalid escape")
 
 func Unpack(rawStr string) (result string, err error) {
 	stringRunes := []rune(rawStr)
-	resultStrings := make([]string, 0, len(stringRunes))
+	var strBuilder strings.Builder
+	strBuilder.Grow(len(stringRunes))
 	var escapeCase bool
 
 	for i := 0; i < len(stringRunes); i++ {
@@ -34,33 +35,33 @@ func Unpack(rawStr string) (result string, err error) {
 		case escapeCase:
 			if current == 'n' && nextIsDigit {
 				digit, _ := strconv.Atoi(string(next))
-				resultStrings = append(resultStrings, strings.Repeat(string('\\')+string(current), digit))
+				strBuilder.WriteString(strings.Repeat(string('\\')+string(current), digit))
 				escapeCase = false
 				i++
 			} else if currentIsDigit {
 				if nextIsDigit {
 					digit, _ := strconv.Atoi(string(next))
-					resultStrings = append(resultStrings, strings.Repeat(string(current), digit))
+					strBuilder.WriteString(strings.Repeat(string(current), digit))
 					escapeCase = false
 					i++
 				} else if nextIsEscaping {
-					resultStrings = append(resultStrings, string(current))
+					strBuilder.WriteString(string(current))
 					escapeCase = false
 				} else {
-					resultStrings = append(resultStrings, string(current))
+					strBuilder.WriteString(string(current))
 					escapeCase = false
 				}
 			} else if nextIsDigit {
 				if currentIsEscaping {
 					digit, _ := strconv.Atoi(string(next))
-					resultStrings = append(resultStrings, strings.Repeat(string(current), digit))
+					strBuilder.WriteString(strings.Repeat(string(current), digit))
 				} else {
 					err = ErrInvalidString
 					return
 				}
 				i++
 			} else if nextIsEscaping {
-				resultStrings = append(resultStrings, string('\\'))
+				strBuilder.WriteString(string('\\'))
 				escapeCase = false
 			} else {
 				err = ErrInvalidEscape
@@ -73,16 +74,12 @@ func Unpack(rawStr string) (result string, err error) {
 			return
 		case nextIsDigit:
 			digit, _ := strconv.Atoi(string(next))
-			resultStrings = append(resultStrings, strings.Repeat(string(current), digit))
+			strBuilder.WriteString(strings.Repeat(string(current), digit))
 			i++
 		default:
-			resultStrings = append(resultStrings, string(current))
+			strBuilder.WriteString(string(current))
 		}
 	}
 
-	defer func() {
-		result = strings.Join(resultStrings, "")
-	}()
-
-	return result, err
+	return strBuilder.String(), err
 }
