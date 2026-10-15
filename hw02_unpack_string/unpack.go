@@ -2,9 +2,7 @@ package hw02unpackstring
 
 import (
 	"errors"
-	"strconv"
 	"strings"
-	"unicode"
 )
 
 var (
@@ -16,69 +14,42 @@ func Unpack(rawStr string) (result string, err error) {
 	stringRunes := []rune(rawStr)
 	var strBuilder strings.Builder
 	strBuilder.Grow(len(stringRunes))
-	var escapeCase bool
 
 	for i := 0; i < len(stringRunes); i++ {
-		current := stringRunes[i]
-		var next rune
+		currentRune := stringRunes[i]
 
-		if i+1 < len(stringRunes) {
-			next = stringRunes[i+1]
-		}
-
-		currentIsDigit := unicode.IsDigit(current)
-		nextIsDigit := unicode.IsDigit(next)
-		currentIsEscaping := current == '\\'
-		nextIsEscaping := next == '\\'
 		switch {
-		case !escapeCase && unicode.IsDigit(current) && nextIsDigit:
-			err = ErrInvalidString
-			return
-		case escapeCase:
-			switch {
-			case current == 'n' && nextIsDigit:
-				digit, _ := strconv.Atoi(string(next))
-				strBuilder.WriteString(strings.Repeat(string('\\')+string(current), digit))
-				escapeCase = false
-				i++
-			case currentIsDigit:
-				switch {
-				case nextIsDigit:
-					digit, _ := strconv.Atoi(string(next))
-					strBuilder.WriteString(strings.Repeat(string(current), digit))
-					escapeCase = false
-					i++
-				case nextIsEscaping:
-					strBuilder.WriteString(string(current))
-					escapeCase = false
-				default:
-					strBuilder.WriteString(string(current))
-					escapeCase = false
-				}
-			case nextIsDigit:
-				digit, _ := strconv.Atoi(string(next))
-				strBuilder.WriteString(strings.Repeat(string(current), digit))
-				i++
-			case nextIsEscaping:
-				strBuilder.WriteString(string('\\'))
-				escapeCase = false
-			default:
-				err = ErrInvalidEscape
-				return
+		case isDigit(currentRune):
+			return "", ErrInvalidString
+		case currentRune == '\\':
+			if i+1 >= len(stringRunes) || !isEscapable(stringRunes[i+1]) {
+				return "", ErrInvalidEscape
 			}
-		case currentIsEscaping:
-			escapeCase = true
-		case currentIsDigit:
-			err = ErrInvalidString
-			return
-		case nextIsDigit:
-			digit, _ := strconv.Atoi(string(next))
-			strBuilder.WriteString(strings.Repeat(string(current), digit))
 			i++
-		default:
-			strBuilder.WriteString(string(current))
+			currentRune = stringRunes[i]
 		}
-	}
 
-	return strBuilder.String(), err
+		repeatCount := 1
+		if i+1 < len(stringRunes) && isDigit(stringRunes[i+1]) {
+			if i+2 < len(stringRunes) && isDigit(stringRunes[i+2]) {
+				return "", ErrInvalidString
+			}
+			repeatCount = int(stringRunes[i+1] - '0')
+			i++
+		}
+		strBuilder.WriteString(strings.Repeat(string(currentRune), repeatCount))
+	}
+	return strBuilder.String(), nil
+}
+
+func isDigit(r rune) bool {
+	return r >= '0' && r <= '9'
+}
+
+func isEscapable(r rune) bool {
+	return isDigit(r) || isEscape(r)
+}
+
+func isEscape(r rune) bool {
+	return r == '\\'
 }
